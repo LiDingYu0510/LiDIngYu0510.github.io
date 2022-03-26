@@ -1,4 +1,4 @@
-baseURL = 'https://lidingyu0510.github.io/'
+baseURL = 'https://lidingyu0510.github.io/blog/'
 languageCode = 'zh'
 title = "Jamie Blog"
 theme = "hugo-theme-cleanwhite"
