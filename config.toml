@@ -8,7 +8,7 @@ paginate = 5
 
 [params]
   header_image = "img/header_bg.jpg"
-  SEOTitle = "Jamie Blog"
+  SEOTitle = "Jamie‘s Blog | 李定宇"
   description = "Jamie's blog. Here is the place collecting my tech notes and thinking pieces."
   keyword = "Flutter, flutter, Vue, vue, app, frontend"
   slogan = "路在腳下，心向遠方"
