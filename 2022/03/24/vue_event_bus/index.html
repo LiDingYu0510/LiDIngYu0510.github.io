@@ -1,0 +1,91 @@
+<!doctype html><html lang=zh><head><meta charset=utf-8><meta http-equiv=x-ua-compatible content="IE=edge"><meta name=viewport content="width=device-width,initial-scale=1"><meta property="og:site_name" content="Jamie Blog"><meta property="og:type" content="article"><meta property="og:image" content="http://example.org//img/header_bg.jpg"><meta property="twitter:image" content="http://example.org//img/header_bg.jpg"><meta name=title content="[技術筆記]Vue中的Event Bus"><meta property="og:title" content="[技術筆記]Vue中的Event Bus"><meta property="twitter:title" content="[技術筆記]Vue中的Event Bus"><meta name=description content="如果要實現跨組件的通訊，除了Vuex之外，在小型專案也很常使用event bus。而Vue2.x和Vue3在實現event bus上也有一些不同。"><meta property="og:description" content="如果要實現跨組件的通訊，除了Vuex之外，在小型專案也很常使用event bus。而Vue2.x和Vue3在實現event bus上也有一些不同。"><meta property="twitter:description" content="如果要實現跨組件的通訊，除了Vuex之外，在小型專案也很常使用event bus。而Vue2.x和Vue3在實現event bus上也有一些不同。"><meta property="twitter:card" content="summary"><meta name=keyword content="Flutter, flutter, Vue, vue, app, frontend"><link rel="shortcut icon" href=/img/favicon.ico><title>[技術筆記]Vue中的Event Bus-Jamie Blog</title><link rel=canonical href=/2022/03/24/vue_event_bus/><link rel=stylesheet href=/css/bootstrap.min.css><link rel=stylesheet href=/css/hugo-theme-cleanwhite.min.css><link rel=stylesheet href=/css/zanshang.css><link href=https://cdn.jsdelivr.net/gh/FortAwesome/Font-Awesome@5.15.1/css/all.css rel=stylesheet type=text/css><script src=/js/jquery.min.js></script>
+<script src=/js/bootstrap.min.js></script>
+<script src=/js/hux-blog.min.js></script></head><nav class="navbar navbar-default navbar-custom navbar-fixed-top"><div class=container-fluid><div class="navbar-header page-scroll"><button type=button class=navbar-toggle>
+<span class=sr-only>Toggle navigation</span>
+<span class=icon-bar></span>
+<span class=icon-bar></span>
+<span class=icon-bar></span></button>
+<a class=navbar-brand href=/>Jamie Blog</a></div><div id=huxblog_navbar><div class=navbar-collapse><ul class="nav navbar-nav navbar-right"><li><a href=/>Home</a></li><li><a href=/categories/flutter>flutter</a></li><li><a href=/categories/openmind>openmind</a></li><li><a href=/categories/vue>vue</a></li></ul></div></div></div></nav><script>var $body=document.body,$toggle=document.querySelector(".navbar-toggle"),$navbar=document.querySelector("#huxblog_navbar"),$collapse=document.querySelector(".navbar-collapse");$toggle.addEventListener("click",handleMagic);function handleMagic(){$navbar.className.indexOf("in")>0?($navbar.className=" ",setTimeout(function(){$navbar.className.indexOf("in")<0&&($collapse.style.height="0px")},400)):($collapse.style.height="auto",$navbar.className+=" in")}</script><style type=text/css>header.intro-header{background-image:url(/img/vue_post_bg.jpg)}</style><header class=intro-header><div class=container><div class=row><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><div class=post-heading><div class=tags><a class=tag href=/tags/vue title=Vue>Vue</a></div><h1>[技術筆記]Vue中的Event Bus</h1><h2 class=subheading>總結了在Vue2.x和Vue3中各自如何使用event bus</h2><span class=meta>Posted by
+李定宇
+on
+Thursday, March 24, 2022</span></div></div></div></div></header><article><div class=container><div class=row><div class="col-lg-8 col-lg-offset-2
+col-md-10 col-md-offset-1
+post-container"><h1 id=從-vue2x-到-vue3-中的-eventbus>從 Vue2.x 到 Vue3 中的 EventBus</h1><h2 id=前言>前言</h2><p>在 Vue2 中，如果要實現跨組件的通訊，除了 <code>Vuex</code>之外，在小型專案也很常使用 <code>event bus</code>；但是在 Vue3 中，移除了 <code>$on</code>、<code>$off</code>、<code>$emit</code>等語法，沒辦法讓 event bus 使用其 api 來監聽。不過，Vue3 中可以用第三方 library <a href=https://www.npmjs.com/package/mitt>mitt</a></p><h2 id=vue2x-中的-event-bus>Vue2.x 中的 Event Bus</h2><h3 id=第一種方法在-mainjs-中建立-event-bus-屬性>第一種方法：在 main.js 中建立 event bus 屬性</h3><p><strong>main.js</strong> 中：</p><pre tabindex=0><code>//在Vue實例中新增一個屬性
+Vue.prototype.$eventBus = new Vue();
+</code></pre><p>在要監聽事件的組件中：</p><pre tabindex=0><code>this.$on(&#34;event name&#34;,(*args)=&gt;{
+	...
+})
+</code></pre><p>在要觸發事件的組件中：</p><pre tabindex=0><code>this.$emit(&#34;event name&#34;,*args)
+</code></pre><h3 id=第二種方法直接建立新的-vue-實例當作-eventbus>第二種方法：直接建立新的 Vue 實例，當作 EventBus</h3><p>在<strong>eventBus.js</strong>中</p><pre tabindex=0><code>import Vue from &#34;vue&#34;;
+export const EventBus = new Vue();
+</code></pre><p>在要監聽事件的組件中：</p><pre tabindex=0><code>import { EventBus } from &#34;@/eventBus&#34;;
+EventBus.$on(&#34;event name&#34;,(...args)=&gt;{
+	...
+})
+</code></pre><p>在要觸發事件的組件中：</p><pre tabindex=0><code>import { EventBus } from &#34;@/eventBus&#34;;
+EventBus.$emit(&#34;event name&#34;,...args)
+</code></pre><h3 id=第三種方法把-eventbus-改造成-plugin>第三種方法：把 eventBus 改造成 plugin</h3><p>這是公司在前專案中使用的，因為要同時是用 Vue 中和<strong>window</strong>的 EventBus。</p><p>在<strong>EventBus.js</strong>中</p><pre tabindex=0><code>import Vue from &#39;vue&#39;;
+
+class EventBus {
+    constructor() {
+        this.bus = new Vue();
+    }
+    on(event, handler) {
+        this.bus.$on(event, handler);
+    }
+    once(event, handler) {
+        this.bus.$once(event, handler);
+    }
+    off(event, handler) {
+        this.bus.$off(event, handler);
+    }
+    emit(event, ...args) {
+        this.bus.$emit(event, ...args);
+    }
+}
+export default {
+    install(Vue) {
+        const eventBus = new EventBus();
+        Vue.prototype.$EventBus = eventBus;
+        window.EventBus = eventBus;
+    }
+};
+</code></pre><p>然後到<strong>main.js</strong>中註冊</p><pre tabindex=0><code>import Vue from &#39;vue&#39;;
+import EventBus from &#39;@/plugins/EventBus&#39;;
+
+Vue.use(EventBus);
+</code></pre><p>之後就可以用上述的方式來監聽和觸發事件～</p><h2 id=vue3-中的-event-bus>Vue3 中的 Event Bus</h2><p>由於 vue3 移除了 <code>$on</code>、<code>$off</code>、<code>$emit</code>等語法，所以用第三方 library <a href=https://www.npmjs.com/package/mitt>mitt</a>來代替。</p><p>新增一個 eventBus 的 entry（<strong>entry.ts</strong>）</p><pre tabindex=0><code>import mitt, { Emitter } from &#39;mitt&#39;;
+const EventBus: Emitter&lt;any&gt; = mitt();
+
+export default EventBus;
+</code></pre><p>而我目前的專案是把 event bus 當 hook 來用，所以用以下寫法<br>（<strong>useDataHook.ts</strong>）</p><pre tabindex=0><code>import EventBus from &#39;@/hooks/eventBus/entry&#39;;
+import { onMounted } from &#39;vue&#39;;
+export default function () {
+    onMounted(() =&gt; {
+        EventBus.on(&#34;event name&#34;,(...args)=&gt;{
+			...
+		})
+    });
+}
+</code></pre><p>（<strong>DemoListener.vue</strong>）</p><pre tabindex=0><code>import useDataHook from &#39;@/hooks/eventBus/useDataHook&#39;;
+setup(){
+	useDataHook()
+}
+</code></pre><p>（<strong>DemoTrigger.vue</strong>）</p><pre tabindex=0><code>import EventBus from &#39;@/hooks/eventBus/entry&#39;;
+setup(){
+	function demoTrigger(){
+		EventBus.emit(&#34;event name&#34;, ...args)
+	}
+	return {demoTrigger}
+}
+</code></pre><hr><ul class=pager><li class=previous><a href=/2022/03/17/vue_make_plugin/ data-toggle=tooltip data-placement=top title=[技術筆記]在Vue自製plugin！>&larr;
+Previous Post</a></li><li class=next><a href=/2022/03/24/how_ericson_became_himself/ data-toggle=tooltip data-placement=top title=[人性大師]高中學歷的心理學大師埃里克森>Next
+Post &rarr;</a></li></ul></div><div class="col-lg-2 col-lg-offset-0
+visible-lg-block
+sidebar-container
+catalog-container"><div class=side-catalog><hr class="hidden-sm hidden-xs"><h5><a class=catalog-toggle href=#>CATALOG</a></h5><ul class=catalog-body></ul></div></div><div class="col-lg-8 col-lg-offset-2
+col-md-10 col-md-offset-1
+sidebar-container"><section><hr class="hidden-sm hidden-xs"><h5><a href=/tags/>FEATURED TAGS</a></h5><div class=tags><a href=/tags/flutter title=flutter>flutter</a>
+<a href=/tags/openmind title=openmind>openmind</a>
+<a href=/tags/vue title=vue>vue</a></div></section></div></div></div></article><footer><div class=container><div class=row><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><ul class="list-inline text-center"></ul><p class="copyright text-muted">Copyright &copy; Jamie Blog 2022<br><a href=https://themes.gohugo.io/hugo-theme-cleanwhite>CleanWhite Hugo Theme</a> by <a href=https://zhaohuabing.com>Huabing</a> |
+<iframe style=margin-left:2px;margin-bottom:-5px frameborder=0 scrolling=0 width=100px height=20px src="https://ghbtns.com/github-btn.html?user=zhaohuabing&repo=hugo-theme-cleanwhite&type=star&count=true"></iframe></p></div></div></div></footer><script>function loadAsync(i,t){var n=document,s="script",e=n.createElement(s),o=n.getElementsByTagName(s)[0];e.src=i,t&&e.addEventListener("load",function(e){t(null,e)},!1),o.parentNode.insertBefore(e,o)}</script><script>$("#tag_cloud").length!==0&&loadAsync("/js/jquery.tagcloud.js",function(){$.fn.tagcloud.defaults={color:{start:"#bbbbee",end:"#0085a1"}},$("#tag_cloud a").tagcloud()})</script><script>loadAsync("https://cdn.jsdelivr.net/npm/fastclick@1.0.6/lib/fastclick.min.js",function(){var e=document.querySelector("nav");e&&FastClick.attach(e)})</script><script type=text/javascript>function generateCatalog(e){_containerSelector="div.post-container";var r=$(_containerSelector),s,o,i,a,t,n=r.find("h1,h2,h3,h4,h5,h6");return $(e).html(''),n.each(function(){s=$(this).prop("tagName").toLowerCase(),a="#"+$(this).prop("id"),o=$(this).text(),t=$('<a href="'+a+'" rel="nofollow">'+o+"</a>"),i=$('<li class="'+s+'_nav"></li>').append(t),$(e).append(i)}),!0}generateCatalog(".catalog-body"),$(".catalog-toggle").click(function(e){e.preventDefault(),$(".side-catalog").toggleClass("fold")}),loadAsync("/js/jquery.nav.js",function(){$(".catalog-body").onePageNav({currentClass:"active",changeHash:!1,easing:"swing",filter:"",scrollSpeed:700,scrollOffset:0,scrollThreshold:.2,begin:null,end:null,scrollChange:null,padding:80})})</script></body></html>

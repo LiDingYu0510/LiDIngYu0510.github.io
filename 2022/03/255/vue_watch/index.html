@@ -1,0 +1,118 @@
+<!doctype html><html lang=zh><head><meta charset=utf-8><meta http-equiv=x-ua-compatible content="IE=edge"><meta name=viewport content="width=device-width,initial-scale=1"><meta property="og:site_name" content="Jamie Blog"><meta property="og:type" content="article"><meta property="og:image" content="http://example.org//img/header_bg.jpg"><meta property="twitter:image" content="http://example.org//img/header_bg.jpg"><meta name=title content="[技術筆記]Vue中使用watch來監聽data變化"><meta property="og:title" content="[技術筆記]Vue中使用watch來監聽data變化"><meta property="twitter:title" content="[技術筆記]Vue中使用watch來監聽data變化"><meta name=description content="Vue2.x和Vue3在實現watch上有一些不同，因此紀錄一下。"><meta property="og:description" content="Vue2.x和Vue3在實現watch上有一些不同，因此紀錄一下。"><meta property="twitter:description" content="Vue2.x和Vue3在實現watch上有一些不同，因此紀錄一下。"><meta property="twitter:card" content="summary"><meta name=keyword content="Flutter, flutter, Vue, vue, app, frontend"><link rel="shortcut icon" href=/img/favicon.ico><title>[技術筆記]Vue中使用watch來監聽data變化-Jamie Blog</title><link rel=canonical href=/2022/03/255/vue_watch/><link rel=stylesheet href=/css/bootstrap.min.css><link rel=stylesheet href=/css/hugo-theme-cleanwhite.min.css><link rel=stylesheet href=/css/zanshang.css><link href=https://cdn.jsdelivr.net/gh/FortAwesome/Font-Awesome@5.15.1/css/all.css rel=stylesheet type=text/css><script src=/js/jquery.min.js></script>
+<script src=/js/bootstrap.min.js></script>
+<script src=/js/hux-blog.min.js></script></head><nav class="navbar navbar-default navbar-custom navbar-fixed-top"><div class=container-fluid><div class="navbar-header page-scroll"><button type=button class=navbar-toggle>
+<span class=sr-only>Toggle navigation</span>
+<span class=icon-bar></span>
+<span class=icon-bar></span>
+<span class=icon-bar></span></button>
+<a class=navbar-brand href=/>Jamie Blog</a></div><div id=huxblog_navbar><div class=navbar-collapse><ul class="nav navbar-nav navbar-right"><li><a href=/>Home</a></li><li><a href=/categories/flutter>flutter</a></li><li><a href=/categories/openmind>openmind</a></li><li><a href=/categories/vue>vue</a></li></ul></div></div></div></nav><script>var $body=document.body,$toggle=document.querySelector(".navbar-toggle"),$navbar=document.querySelector("#huxblog_navbar"),$collapse=document.querySelector(".navbar-collapse");$toggle.addEventListener("click",handleMagic);function handleMagic(){$navbar.className.indexOf("in")>0?($navbar.className=" ",setTimeout(function(){$navbar.className.indexOf("in")<0&&($collapse.style.height="0px")},400)):($collapse.style.height="auto",$navbar.className+=" in")}</script><style type=text/css>header.intro-header{background-image:url(/img/vue_post_bg.jpg)}</style><header class=intro-header><div class=container><div class=row><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><div class=post-heading><div class=tags><a class=tag href=/tags/vue title=Vue>Vue</a></div><h1>[技術筆記]Vue中使用watch來監聽data變化</h1><h2 class=subheading>總結了在Vue2.x和Vue3中各自如何使用watch</h2><span class=meta>Posted by
+李定宇
+on
+Friday, March 25, 2022</span></div></div></div></div></header><article><div class=container><div class=row><div class="col-lg-8 col-lg-offset-2
+col-md-10 col-md-offset-1
+post-container"><h2 id=前言>前言</h2><p>目前我在手上的專案，要從 Vue2.6 轉換到 Vue3.0，剛好利用這個機會紀錄一下兩者的差別。</p><h2 id=vue2x-的-watch-寫法>Vue2.x 的 watch 寫法</h2><h3 id=簡單寫法>簡單寫法</h3><p>假設欲觀察的值為<code> testData</code></p><pre tabindex=0><code>data(){
+return {
+		testData:0
+	}
+},
+watch:{
+	testData:(newValue, oldValue){
+		console.log(&#34;data changed&#34;)
+	}
+}
+</code></pre><h3 id=完整寫法>完整寫法</h3><p>假設欲觀察的值為<code> testData</code></p><pre tabindex=0><code>data(){
+return {
+		testData:0
+	}
+},
+watch:{
+	testData:{
+		immediate:true, //立即監聽（初次渲染時就執行）
+		handler:(newValue, oldValue){
+			//監視的回調
+			console.log(newValue)
+		}
+	}
+}
+</code></pre><h2 id=vue30-的-watch-寫法>Vue3.0 的 watch 寫法</h2><h3 id=監視一個-ref-定義的響應式數據>監視一個 ref 定義的響應式數據</h3><p>假設欲觀察的值為<code> testData</code></p><pre tabindex=0><code>setup(){
+	const testData = ref(0)
+	watch(testData, (newValue, oldValue)=&gt;{
+		console.log(&#34;testData changed&#34;, newValue)
+	})
+	return {testData}
+}
+</code></pre><p>ps. <code>immediate</code>和<code>deep</code>的配置也可以使用；不過大多數情況 setup 中的 watch 都是 immediate 的</p><pre tabindex=0><code>watch(testData, (newValue, oldValue)=&gt;{...}, {immediate:true, deep:true})
+</code></pre><h3 id=監視多個-ref-定義的響應式數據>監視多個 ref 定義的響應式數據</h3><p>假設欲觀察的值為<code> testData01</code>、<code>testData02</code></p><pre tabindex=0><code>setup(){
+	const testData01 = ref(0)
+	const testData02 = ref(&#34;Hello Vue3&#34;)
+
+	watch([testData01, testData02], (newValue, oldValue)=&gt;{
+		console.log(&#34;testData01 changed&#34;, newValue[0])
+		console.log(&#34;testData02 changed&#34;, newValue[1])
+	})
+	return {testData01, testData02}
+}
+</code></pre><h3 id=監視-reactive-所定義的-object-的全部-keyvalue>監視 reactive 所定義的 object 的全部 keyValue</h3><p>假設欲觀察的值為<code> tesObject</code></p><pre tabindex=0><code>setup(){
+	const testOject = reactive({
+		testData01 : 0,
+		tsetData02 : &#34;hello Vue3&#34;
+	})
+	watch(testOject, (newValue, oldValue)=&gt;{
+		console.log(&#34;data changed&#34;, newValue, oldValue);
+	})
+	return {testOject}
+}
+</code></pre><p><strong>不過此寫法沒辦法獲取到 oldValue</strong></p><h3 id=監視-reactive-所定義的-object-的某個-keyvalue>監視 reactive 所定義的 object 的某個 keyValue</h3><p>假設欲觀察的值為<code> tesObject</code>中的<code>testData01</code></p><pre tabindex=0><code>setup(){
+	const testOject = reactive({
+		testData01 : 0,
+		tsetData02 : &#34;hello Vue3&#34;
+	})
+	watch(()=&gt;testOject.testData01,
+		(newValue, oldValue)=&gt;{
+			console.log(&#34;data changed&#34;, newValue, oldValue);
+		})
+
+	return {testObject}
+}
+</code></pre><h3 id=監視-reactive-所定義的-object-的某個-keyvalue而該值也是個-object>監視 reactive 所定義的 object 的某個 keyValue,而該值也是個 object</h3><p>假設欲觀察的值為<code> tesObject</code>中的<code>testDataObject</code></p><pre tabindex=0><code>setup(){
+	const testOject = reactive({
+		testData01 : 0,
+		testData02 : &#34;hello Vue3&#34;,
+		testDataObject : {
+			testData03:2022,
+			testData04:&#34;Thursday&#34;
+		}
+	})
+	watch(()=&gt;testOject.testDataObject,
+			(newValue, oldValue)=&gt;{
+				console.log(&#34;data changed&#34;, newValue, oldValue);
+			},
+			{deep : true}
+		)
+	return {testObject}
+}
+</code></pre><p><strong>要開啟深度監聽</strong></p><h3 id=監視父組件傳過來的-props>監視父組件傳過來的 props</h3><p>假設欲觀察的值為<code>testProps</code></p><pre tabindex=0><code>props:{
+	testProps:{
+		type:string,
+		required:true
+	}
+},
+setup(){
+		watch(()=&gt; testProps,
+			(newValue, oldValue)=&gt;{
+				console.log(&#34;data changed&#34;, newValue, oldValue);
+			},
+			{deep : true}
+		)
+	return {testProps}
+}
+</code></pre><p><strong>要開啟深度監聽</strong></p><hr><ul class=pager><li class=previous><a href=/2022/03/24/how_ericson_became_himself/ data-toggle=tooltip data-placement=top title=[人性大師]高中學歷的心理學大師埃里克森>&larr;
+Previous Post</a></li></ul></div><div class="col-lg-2 col-lg-offset-0
+visible-lg-block
+sidebar-container
+catalog-container"><div class=side-catalog><hr class="hidden-sm hidden-xs"><h5><a class=catalog-toggle href=#>CATALOG</a></h5><ul class=catalog-body></ul></div></div><div class="col-lg-8 col-lg-offset-2
+col-md-10 col-md-offset-1
+sidebar-container"><section><hr class="hidden-sm hidden-xs"><h5><a href=/tags/>FEATURED TAGS</a></h5><div class=tags><a href=/tags/flutter title=flutter>flutter</a>
+<a href=/tags/openmind title=openmind>openmind</a>
+<a href=/tags/vue title=vue>vue</a></div></section></div></div></div></article><footer><div class=container><div class=row><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><ul class="list-inline text-center"></ul><p class="copyright text-muted">Copyright &copy; Jamie Blog 2022<br><a href=https://themes.gohugo.io/hugo-theme-cleanwhite>CleanWhite Hugo Theme</a> by <a href=https://zhaohuabing.com>Huabing</a> |
+<iframe style=margin-left:2px;margin-bottom:-5px frameborder=0 scrolling=0 width=100px height=20px src="https://ghbtns.com/github-btn.html?user=zhaohuabing&repo=hugo-theme-cleanwhite&type=star&count=true"></iframe></p></div></div></div></footer><script>function loadAsync(i,t){var n=document,s="script",e=n.createElement(s),o=n.getElementsByTagName(s)[0];e.src=i,t&&e.addEventListener("load",function(e){t(null,e)},!1),o.parentNode.insertBefore(e,o)}</script><script>$("#tag_cloud").length!==0&&loadAsync("/js/jquery.tagcloud.js",function(){$.fn.tagcloud.defaults={color:{start:"#bbbbee",end:"#0085a1"}},$("#tag_cloud a").tagcloud()})</script><script>loadAsync("https://cdn.jsdelivr.net/npm/fastclick@1.0.6/lib/fastclick.min.js",function(){var e=document.querySelector("nav");e&&FastClick.attach(e)})</script><script type=text/javascript>function generateCatalog(e){_containerSelector="div.post-container";var r=$(_containerSelector),s,o,i,a,t,n=r.find("h1,h2,h3,h4,h5,h6");return $(e).html(''),n.each(function(){s=$(this).prop("tagName").toLowerCase(),a="#"+$(this).prop("id"),o=$(this).text(),t=$('<a href="'+a+'" rel="nofollow">'+o+"</a>"),i=$('<li class="'+s+'_nav"></li>').append(t),$(e).append(i)}),!0}generateCatalog(".catalog-body"),$(".catalog-toggle").click(function(e){e.preventDefault(),$(".side-catalog").toggleClass("fold")}),loadAsync("/js/jquery.nav.js",function(){$(".catalog-body").onePageNav({currentClass:"active",changeHash:!1,easing:"swing",filter:"",scrollSpeed:700,scrollOffset:0,scrollThreshold:.2,begin:null,end:null,scrollChange:null,padding:80})})</script></body></html>
