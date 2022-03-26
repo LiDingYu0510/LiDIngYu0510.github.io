@@ -1,0 +1,30 @@
+baseURL = 'http://example.org/'
+languageCode = 'zh'
+title = "Jamie Blog"
+theme = "hugo-theme-cleanwhite"
+paginate = 5
+
+
+
+[params]
+  header_image = "img/header_bg.jpg"
+  SEOTitle = "Jamie Blog"
+  description = "Jamie's blog. Here is the place collecting my tech notes and thinking pieces."
+  keyword = "Flutter, flutter, Vue, vue, app, frontend"
+  slogan = "路在腳下，心向遠方"
+
+  image_404 = "img/404_bg.jpg"
+  title_404 = "你來到了沒有知識的荒原 :("
+  omit_categories = false
+
+  featured_tags = true 
+  featured_condition_size = 1 
+
+  # Sidebar settings
+  sidebar_about_description = "中文系出身，不小心和軟體工程結緣並躬身入局，想要握有技術的話語權並暢行世界。"
+  #sidebar_avatar = "img/avatar-zhaohuabing.jpg"      # use absolute URL, seeing it's used in both `/` and `/about/`
+  sidebar_avatar = "img/dingyu.png"      # use absolute URL, seeing it's used in both `/` and `/about/`
+
+  friends = false
+  bookmarks = false
+  about_me = true
