@@ -1,0 +1,262 @@
+<!doctype html><html lang=zh><head><meta charset=utf-8><meta http-equiv=x-ua-compatible content="IE=edge"><meta name=viewport content="width=device-width,initial-scale=1"><meta property="og:site_name" content="Jamie Blog"><meta property="og:type" content="article"><meta property="og:image" content="https://lidingyu0510.github.io/img/header_bg.jpg"><meta property="twitter:image" content="https://lidingyu0510.github.io/img/header_bg.jpg"><meta name=title content="[技術筆記]Flutter 與 FCM "><meta property="og:title" content="[技術筆記]Flutter 與 FCM "><meta property="twitter:title" content="[技術筆記]Flutter 與 FCM "><meta name=description content="FCM（firebase cloud message），是用Firebase來控制發送、接收notification。不過之前我在寫專案的時候，發現網路上很多分享如何設定的文章不多、而且也蠻不一致的，所以就紀錄一下"><meta property="og:description" content="FCM（firebase cloud message），是用Firebase來控制發送、接收notification。不過之前我在寫專案的時候，發現網路上很多分享如何設定的文章不多、而且也蠻不一致的，所以就紀錄一下"><meta property="twitter:description" content="FCM（firebase cloud message），是用Firebase來控制發送、接收notification。不過之前我在寫專案的時候，發現網路上很多分享如何設定的文章不多、而且也蠻不一致的，所以就紀錄一下"><meta property="twitter:card" content="summary"><meta name=keyword content="Flutter, flutter, Vue, vue, app, frontend"><link rel="shortcut icon" href=/img/favicon.ico><title>[技術筆記]Flutter 與 FCM -DingYu的一些筆記</title><link rel=canonical href=/2022/03/28/flutter_widget/><link rel=stylesheet href=/css/bootstrap.min.css><link rel=stylesheet href=/css/hugo-theme-cleanwhite.min.css><link rel=stylesheet href=/css/zanshang.css><link href=https://cdn.jsdelivr.net/gh/FortAwesome/Font-Awesome@5.15.1/css/all.css rel=stylesheet type=text/css><script src=/js/jquery.min.js></script>
+<script src=/js/bootstrap.min.js></script>
+<script src=/js/hux-blog.min.js></script></head><nav class="navbar navbar-default navbar-custom navbar-fixed-top"><div class=container-fluid><div class="navbar-header page-scroll"><button type=button class=navbar-toggle>
+<span class=sr-only>Toggle navigation</span>
+<span class=icon-bar></span>
+<span class=icon-bar></span>
+<span class=icon-bar></span></button>
+<a class=navbar-brand href=/>Jamie Blog</a></div><div id=huxblog_navbar><div class=navbar-collapse><ul class="nav navbar-nav navbar-right"><li><a href=/>Home</a></li><li><a href=/categories/flutter>flutter</a></li><li><a href=/categories/openmind>openmind</a></li><li><a href=/categories/vue>vue</a></li></ul></div></div></div></nav><script>var $body=document.body,$toggle=document.querySelector(".navbar-toggle"),$navbar=document.querySelector("#huxblog_navbar"),$collapse=document.querySelector(".navbar-collapse");$toggle.addEventListener("click",handleMagic);function handleMagic(){$navbar.className.indexOf("in")>0?($navbar.className=" ",setTimeout(function(){$navbar.className.indexOf("in")<0&&($collapse.style.height="0px")},400)):($collapse.style.height="auto",$navbar.className+=" in")}</script><style type=text/css>header.intro-header{background-image:url(/img/flutter_post_bg.jpg)}</style><header class=intro-header><div class=container><div class=row><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><div class=post-heading><div class=tags><a class=tag href=/tags/flutter title=Flutter>Flutter</a></div><h1>[技術筆記]Flutter 與 FCM</h1><h2 class=subheading>使用firebase_message和local_notification</h2><span class=meta>Posted by
+李定宇
+on
+Monday, March 28, 2022</span></div></div></div></div></header><article><div class=container><div class=row><div class="col-lg-8 col-lg-offset-2
+col-md-10 col-md-offset-1
+post-container"><h1 id=在-flutter-中使用-fcm>在 Flutter 中使用 FCM</h1><h2 id=前言>前言</h2><p>FCM（firebase cloud message），是用 Firebase 來控制發送、接收 notification。不過之前我在寫專案的時候，發現網路上很多分享如何設定的文章不多、而且也蠻不一致的（有可能是 firebase_message library 太常更新的緣故），所以現在來紀錄一下目前專案中是如何執行的。</p><p><em>不過目前還算是不太知其所以然的狀態，先紀錄下來，後續說明會陸續補上</em></p><h2 id=專案版本依賴>專案版本依賴</h2><ul><li>Flutter：2.5.3</li><li>firebase_core: ^1.9.0</li><li>firebase_messaging: ^10.0.9</li><li>flutter_local_notifications: ^9.1.5</li></ul><h2 id=過程>過程</h2><h3 id=firebase-專案初始化>FIrebase 專案初始化</h3><ul><li>先在 Firebase 專案中下載 ios/android 所需要的 SDK（GoogleService-Info.plist/google-services.json）<ul><li>這邊要注意專案名稱的一致（如：com.expamle.demo）</li><li>在 Ios 的專案，最好用 Xcode 來引入 GoogleService-Info.plist <em>（但 Ios 還需要在 App Developer 上設定一些東西，這裏就先略過）</em></li></ul></li><li>在 pubspec.yaml 下載所需的 library</li></ul><p>###Android 設定 - 在 <strong>{Flutter project}/android/app/build.gradle</strong>中 - (之後在運行的時候可能會有些 android 版本報錯，我也有做一些修改)</p><pre tabindex=0><code>//firebase setting
+apply plugin: &#39;com.google.gms.google-services&#39;
+
+android {
+    // modify 29 to 31 as setting flutter persission
+    compileSdkVersion 31
+
+    defaultConfig {
+        //modify from 20 to 23 due to firebase services
+        minSdkVersion 23
+    }
+    // ... other setting
+}
+
+dependencies {
+// ... other dependencies
+// 新增這一行
+implementation platform(&#39;com.google.firebase:firebase-bom:29.0.0&#39;)
+}
+</code></pre><ul><li>在 <strong>{Flutter project}/android/build.gradle</strong>中</li></ul><pre tabindex=0><code>buildscript {
+  dependencies {
+    // ... other dependencies
+    // 新增這一行
+     classpath &#39;com.google.gms:google-services:4.3.10&#39;
+	}
+}
+</code></pre><h2 id=ios-設定>Ios 設定</h2><ul><li>在**{Flutter Project}/ios/Runner/AppDelegate.swift**中</li></ul><pre tabindex=0><code>import UIKit
+import Flutter
+
+@UIApplicationMain
+@objc class AppDelegate: FlutterAppDelegate {
+  override func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+  ) -&gt; Bool {
+    //firebase setting
+    if #available(iOS 10.0, *) {
+      UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
+    }
+    //firebase setting end
+    GeneratedPluginRegistrant.register(with: self)
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+}
+</code></pre><h2 id=flutter-程式碼設定>Flutter 程式碼設定</h2><h3 id=在-maindart-中>在 main.dart 中</h3><pre tabindex=0><code>Future _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+}
+
+void main() async {
+
+	///Firebase.initializeApp()需要調用 native 程式碼來初始化Firebase，
+	///而且由於這個library需要使用 flutter 的 channel來調用 native 程式碼，那是異步完成的	//因此需要調用WidgetsFlutterBinding.ensureInitialized() 來確保有一個WidgetsBinding實例
+	WidgetsFlutterBinding.ensureInitialized()
+	await Firebase.initializeApp();
+
+	///讓app在沒有被啟動時也可以讓手機接受notification
+	FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+	/// library: flutter_local_notifications
+	LocalNotificationService.requestIOSPermissions();
+
+	runApp(MyApp())
+}
+
+class MyApp extends StatelessWidget {
+	@override
+	Widget build(BuildContext context) {
+		 FirebaseNotificationService.initFirebaseNotificaiton(context);
+	}
+}
+</code></pre><h3 id=在-lib-新增檔案firebase_notification_servicedart>在 lib/ 新增檔案<strong>firebase_notification_service.dart</strong></h3><pre tabindex=0><code>
+class FirebaseNotificationService {
+  static initFirebaseNotificaiton(BuildContext context, String route) {
+    ///初始化LocalNotificationService
+    ///傳context是為了使用Navigator
+    LocalNotificationService.initialize(context, route);
+
+    ///give the message which user taps when app is from terminated state
+    FirebaseMessaging.instance.getInitialMessage().then((message) {
+      if (message != null) {
+        // go to main screen
+        // Navigator.of(context).pushNamed(route);
+      }
+    });
+
+    var lock = Lock();
+
+    ///stream 的監聽
+    ///only work in the foreground
+    FirebaseMessaging.onMessage.listen((message) async {
+      if (!lock.locked) {
+        await lock.synchronized(() {
+          String preMsgId = context.read&lt;TicketsQueueProvider&gt;().preMsgId;
+          String newMsgId = message.messageId;
+          if (newMsgId != preMsgId) {
+            LocalNotificationService.display(message);
+          }
+          Provider.of&lt;TicketsQueueProvider&gt;(context, listen: false)
+              .setPreMsgId(newMsgId);
+        });
+      }
+    });
+
+    ///stream 監聽
+    ///only when app in the background but not close, and user tap notifiction
+    ///user tap notification
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      // do nothing, could go to previous screen(route)
+    });
+  }
+}
+</code></pre><ul><li>會加上<code>synchronized</code> 這個鎖的原因，是因為在 IOS 實機測試中，發現 FirebaseMessaging.onMessage 會重複接收同一個 message.id 的 message。所以在專案上，用<code>Lock</code>來確保一次比較一個 message.id，然後用 Provider 來全局存取前一個 message.id</li></ul><h3 id=在-lib-新增檔案local_notification_servicedart>在 lib/ 新增檔案<strong>local_notification_service.dart</strong></h3><pre tabindex=0><code>
+class LocalNotificationService {
+  ///Singleton pattern
+  ///目的：保證一個類別只會產生一個物件，而且要提供存取該物件的統一方法
+  static final LocalNotificationService _notificationService =
+      LocalNotificationService._internal();
+  factory LocalNotificationService() {
+    return _notificationService;
+  }
+  LocalNotificationService._internal();
+
+
+  static void requestIOSPermissions() {
+    notificationsPlugin
+        .resolvePlatformSpecificImplementation&lt;
+            IOSFlutterLocalNotificationsPlugin&gt;()
+        ?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+  }
+
+  static final FlutterLocalNotificationsPlugin notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  static void initialize(
+      BuildContext context, String defaultRouteForMessage) async {
+    final InitializationSettings initializationSettings = InitializationSettings(
+
+        ///android default icon
+        ///route should be: {project}\android\app\src\main\res\drawable\YOUR_APP_ICON.png
+        android: AndroidInitializationSettings(&#34;@drawable/ic_notification&#34;),
+
+        ///ios default setting
+        iOS: IOSInitializationSettings(
+          requestSoundPermission: false,
+          requestBadgePermission: false,
+          requestAlertPermission: false,
+        ));
+
+    /// Create an Android Notification Channel.
+    /// We use this channel in the `AndroidManifest.xml` file to override the
+    /// default FCM channel to enable heads up notifications.
+    AndroidNotificationChannel channel = const AndroidNotificationChannel(
+      &#39;high_importance_channel&#39;, // id
+      &#39;High Importance Notifications&#39;, // title
+      importance: Importance.high,
+    );
+    await notificationsPlugin
+        .resolvePlatformSpecificImplementation&lt;
+            AndroidFlutterLocalNotificationsPlugin&gt;()
+        ?.createNotificationChannel(channel);
+
+    await notificationsPlugin.initialize(initializationSettings,
+        onSelectNotification: (String route) async {
+      print(&#39;---selected notification&#39;);
+      // Navigator.of(context)
+      //     .pushNamedAndRemoveUntil(defaultRouteForMessage, (route) =&gt; false);
+      // Navigator.of(context).pushNamed(defaultRouteForMessage);
+    });
+  }
+
+  static void testDisplay() async {
+    try {
+      final id = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      ///notification 的一些設置，如channel、優先級等
+      final notificationDetails = NotificationDetails(
+        android: AndroidNotificationDetails(
+          &#39;high_importance_channel&#39;, //channel id
+          &#39;High Importance Notifications&#39;, //channel name
+          importance: Importance.max,
+          priority: Priority.high,
+        ),
+      );
+
+      await notificationsPlugin.show(
+        id,
+        &#39;notificaion title&#39;,
+        &#39;notificaion body&#39;,
+        notificationDetails,
+        payload: &#34;&#34;,
+      );
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  static void display(RemoteMessage message) async {
+    try {
+      ///確保每次都是獨立的id，用datetime
+      final id = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      AndroidNotificationDetails _androidNotificationDetails =
+          AndroidNotificationDetails(
+              &#39;high_importance_channel&#39;, &#39;High Importance Notifications&#39;,
+              playSound: true,
+              priority: Priority.high,
+              importance: Importance.max,);
+
+      IOSNotificationDetails _iosNotificationDetails = IOSNotificationDetails(
+//         presentAlert: bool?,  // Present an alert when the notification is displayed and the application is in the foreground (only from iOS 10 onwards)
+//         presentBadge: bool?,  // Present the badge number when the notification is displayed and the application is in the foreground (only from iOS 10 onwards)
+//         presentSound: bool?,  // Play a sound when the notification is displayed and the application is in the foreground (only from iOS 10 onwards)
+//         sound: String?,  // Specifics the file path to play (only from iOS 10 onwards)
+//         badgeNumber: int?, // The application&#39;s icon badge number
+//         attachments: List&lt;IOSNotificationAttachment&gt;?, (only from iOS 10 onwards)
+//         subtitle: String?, //Secondary description  (only from iOS 10 onwards)
+//         threadIdentifier: String? (only from iOS 10 onwards)
+          );
+      NotificationDetails platformChannelSpecifics = NotificationDetails(
+          android: _androidNotificationDetails, iOS: _iosNotificationDetails);
+
+      await notificationsPlugin.show(
+          id,
+          message.notification.title,
+          message.notification.body,
+          // notificationDetails,
+          platformChannelSpecifics,
+          payload: &#34;&#34;
+          ///傳route進去
+          // payload: message.data[&#34;route&#34;],
+          );
+    } catch (e) {
+      print(e);
+    }
+  }
+}
+</code></pre><p>#Change Log</p><ul><li>20220328- 初稿</li></ul><hr><ul class=pager><li class=previous><a href=/2022/03/255/vue_watch/ data-toggle=tooltip data-placement=top title=[技術筆記]Vue中使用watch來監聽data變化>&larr;
+Previous Post</a></li></ul></div><div class="col-lg-2 col-lg-offset-0
+visible-lg-block
+sidebar-container
+catalog-container"><div class=side-catalog><hr class="hidden-sm hidden-xs"><h5><a class=catalog-toggle href=#>CATALOG</a></h5><ul class=catalog-body></ul></div></div><div class="col-lg-8 col-lg-offset-2
+col-md-10 col-md-offset-1
+sidebar-container"><section><hr class="hidden-sm hidden-xs"><h5><a href=/tags/>FEATURED TAGS</a></h5><div class=tags><a href=/tags/flutter title=flutter>flutter</a>
+<a href=/tags/openmind title=openmind>openmind</a>
+<a href=/tags/vue title=vue>vue</a></div></section></div></div></div></article><footer><div class=container><div class=row><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><ul class="list-inline text-center"></ul><p class="copyright text-muted">Copyright &copy; Jamie Blog 2022<br><a href=https://themes.gohugo.io/hugo-theme-cleanwhite>CleanWhite Hugo Theme</a> by <a href=https://zhaohuabing.com>Huabing</a> |
+<iframe style=margin-left:2px;margin-bottom:-5px frameborder=0 scrolling=0 width=100px height=20px src="https://ghbtns.com/github-btn.html?user=zhaohuabing&repo=hugo-theme-cleanwhite&type=star&count=true"></iframe></p></div></div></div></footer><script>function loadAsync(i,t){var n=document,s="script",e=n.createElement(s),o=n.getElementsByTagName(s)[0];e.src=i,t&&e.addEventListener("load",function(e){t(null,e)},!1),o.parentNode.insertBefore(e,o)}</script><script>$("#tag_cloud").length!==0&&loadAsync("/js/jquery.tagcloud.js",function(){$.fn.tagcloud.defaults={color:{start:"#bbbbee",end:"#0085a1"}},$("#tag_cloud a").tagcloud()})</script><script>loadAsync("https://cdn.jsdelivr.net/npm/fastclick@1.0.6/lib/fastclick.min.js",function(){var e=document.querySelector("nav");e&&FastClick.attach(e)})</script><script type=text/javascript>function generateCatalog(e){_containerSelector="div.post-container";var r=$(_containerSelector),s,o,i,a,t,n=r.find("h1,h2,h3,h4,h5,h6");return $(e).html(''),n.each(function(){s=$(this).prop("tagName").toLowerCase(),a="#"+$(this).prop("id"),o=$(this).text(),t=$('<a href="'+a+'" rel="nofollow">'+o+"</a>"),i=$('<li class="'+s+'_nav"></li>').append(t),$(e).append(i)}),!0}generateCatalog(".catalog-body"),$(".catalog-toggle").click(function(e){e.preventDefault(),$(".side-catalog").toggleClass("fold")}),loadAsync("/js/jquery.nav.js",function(){$(".catalog-body").onePageNav({currentClass:"active",changeHash:!1,easing:"swing",filter:"",scrollSpeed:700,scrollOffset:0,scrollThreshold:.2,begin:null,end:null,scrollChange:null,padding:80})})</script></body></html>
